@@ -13,6 +13,9 @@
 #include <sys/stat.h>
 #include <linux/i2c-dev.h>
 #include <math.h>
+#include <fstream>
+
+using namespace std;
 
 const int HMC5883L_I2C_ADDR = 0x1E;
 
@@ -20,6 +23,12 @@ const int HMC5883L_I2C_ADDR = 0x1E;
 #define CONFIG_B 0x01
 #define MODE 0x02
 #define DATA 0x03 //read 6 bytes: x msb, x lsb, z msb, z lsb, y msb, y lsb
+
+
+int xMin = 0;
+int xMax = 0;
+int yMin = 0;
+int yMax = 0;
 
 void selectDevice(int fd, int addr, char * name){
   
@@ -41,6 +50,19 @@ void writeToDevice(int fd, int reg, int val){
         fprintf(stderr, "Can't write to HMC5883L\n");
         //exit(1);
     }
+}
+
+void LoadCalibration(){
+
+  std::fstream calibFile;
+  calibFile.open ("/home/pi/ns_catkin_ws/src/CompassNode/calib.dat", std::fstream::in);
+  
+  calibFile >> xMin;
+  calibFile >> xMax;
+  calibFile >> yMin;
+  calibFile >> yMax;  
+  
+  calibFile.close();
 }
 
 int main(int argc, char **argv){
@@ -74,6 +96,8 @@ int main(int argc, char **argv){
   // Set sensor to continous measurement mode.
   writeToDevice(fd, MODE, 0b00000000);
 
+  LoadCalibration();
+
   while (ros::ok()){
     buf[0] = 0x03;
     std_msgs::Float64 msg;
@@ -90,12 +114,6 @@ int main(int argc, char **argv){
       short x = (buf[0] << 8) | buf[1];
       short y = (buf[4] << 8) | buf[5];
       short z = (buf[2] << 8) | buf[3];
-
-      int xMin = -110;
-      int xMax = 89;
-
-      int yMin =-150;
-      int yMax = 64;
       
       float xScaled = 2.*(float)(x - xMin) / (xMax - xMin) - 1.0;
       float yScaled = 2.*(float)(y - yMin) / (yMax - yMin) - 1.0;
