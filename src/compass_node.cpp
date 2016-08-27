@@ -55,7 +55,7 @@ void writeToDevice(int fd, int reg, int val){
 void LoadCalibration(){
 
   std::fstream calibFile;
-  calibFile.open ("/home/pi/ns_catkin_ws/src/CompassNode/calib.dat", std::fstream::in);
+  calibFile.open ("/home/pi/ns_catkin_ws/calibData/compass_calib", std::fstream::in);
   
   calibFile >> xMin;
   calibFile >> xMax;
